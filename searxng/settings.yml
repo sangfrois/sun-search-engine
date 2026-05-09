@@ -1,0 +1,19 @@
+use_default_settings: true
+server:
+  secret_key: "sunsecretkey12345"
+  limiter: false
+  image_proxy: true
+ui:
+  static_use_hash: true
+redis:
+  url: redis://redis:6379/0
+outgoing:
+  request_timeout: 10.0
+  proxies:
+    all://:
+      - socks5h://tor:9050
+  using_tor_proxy: true
+search:
+  formats:
+    - html
+    - json

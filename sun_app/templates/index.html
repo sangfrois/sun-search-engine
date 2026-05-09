@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SUN Search</title>
+<style>
+  body { font-family: -apple-system, sans-serif; background: #121212; color: #e0e0e0; margin: 0; padding: 20px; }
+  .container { max-width: 600px; margin: auto; position: relative; }
+  h1 { text-align: center; color: #ffab00; font-weight: 300; letter-spacing: 2px; }
+  .search-wrapper { position: relative; }
+  input[type="text"] { width: 100%; padding: 15px; border-radius: 25px; border: none; background: #222; color: #fff; font-size: 16px; box-sizing: border-box; margin-bottom: 20px; outline: none; transition: box-shadow 0.3s; }
+  input[type="text"]:focus { box-shadow: 0 0 10px rgba(255, 171, 0, 0.2); }
+  .suggestions { position: absolute; top: 52px; left: 0; right: 0; background: #2a2a2a; border-radius: 15px; overflow: hidden; z-index: 10; display: none; box-shadow: 0 8px 16px rgba(0,0,0,0.6); border: 1px solid #333; }
+  .suggestion-item { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #333; color: #ccc; display: flex; align-items: center; justify-content: space-between; }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:hover { background: #3a3a3a; color: #fff; }
+  .suggestion-item.rl-source { color: #ffab00; }
+  .rl-badge { font-size: 10px; background: rgba(255, 171, 0, 0.2); padding: 2px 6px; border-radius: 10px; color: #ffab00; text-transform: uppercase; letter-spacing: 1px; }
+  .result { margin-bottom: 25px; }
+  .title { color: #82b1ff; text-decoration: none; font-size: 18px; display: block; margin-bottom: 5px; }
+  .url { color: #00e676; font-size: 12px; margin-bottom: 5px; }
+  .content { font-size: 14px; color: #aaa; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>SUN.</h1>
+  <form action="/search" method="get" id="searchForm">
+    <div class="search-wrapper">
+      <input type="text" name="q" id="searchInput" placeholder="Search the unbound network..." value="{{ query or '' }}" autocomplete="off">
+      <div id="suggestions" class="suggestions"></div>
+    </div>
+  </form>
+  {% if results %}
+    {% for r in results %}
+      <div class="result">
+        <a class="title" href="/click?url={{ r.url | urlencode }}&title={{ r.title | urlencode }}">{{ r.title }}</a>
+        <div class="url">{{ r.url[:60] }}...</div>
+        <div class="content">{{ r.content[:150] }}</div>
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+
+<script>
+  const input = document.getElementById('searchInput');
+  const suggestionsBox = document.getElementById('suggestions');
+  let debounceTimer;
+  const suggestionCache = {}; // Client-side cache for instantaneous typing
+
+  input.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    const q = this.value.trim().toLowerCase();
+    
+    if (q.length < 2) {
+      suggestionsBox.style.display = 'none';
+      return;
+    }
+
+    // Instant hit from cache if available
+    if (suggestionCache[q]) {
+      renderSuggestions(suggestionCache[q]);
+      return;
+    }
+
+    // Lowered debounce from 200ms to 75ms for snappier feel
+    debounceTimer = setTimeout(async () => {
+      try {
+        const res = await fetch('/autocomplete?q=' + encodeURIComponent(q));
+        const suggestions = await res.json();
+        suggestionCache[q] = suggestions; // Save to cache
+        renderSuggestions(suggestions);
+      } catch (e) {
+        console.error(e);
+      }
+    }, 75);
+  });
+
+  function renderSuggestions(suggestions) {
+    if (suggestions.length > 0) {
+      suggestionsBox.innerHTML = '';
+      suggestions.forEach(sug => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item ' + (sug.source === 'rl' ? 'rl-source' : '');
+        
+        const textSpan = document.createElement('span');
+        textSpan.textContent = sug.text;
+        div.appendChild(textSpan);
+        
+        if (sug.source === 'rl') {
+          const badge = document.createElement('span');
+          badge.className = 'rl-badge';
+          badge.textContent = 'Personalized';
+          div.appendChild(badge);
+        }
+        
+        div.onclick = function() {
+          input.value = sug.text;
+          suggestionsBox.style.display = 'none';
+          document.getElementById('searchForm').submit();
+        };
+        suggestionsBox.appendChild(div);
+      });
+      suggestionsBox.style.display = 'block';
+    } else {
+      suggestionsBox.style.display = 'none';
+    }
+  }
+
+  document.addEventListener('click', function(e) {
+    if (e.target !== input) {
+      suggestionsBox.style.display = 'none';
+    }
+  });
+</script>
+
+</body>
+</html>

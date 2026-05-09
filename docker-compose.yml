@@ -1,0 +1,52 @@
+version: '3.7'
+services:
+  tor:
+    container_name: tor
+    image: osminogin/tor-simple
+    restart: always
+    networks:
+      - sun_net
+    ports:
+      - "9050:9050"
+
+  redis:
+    container_name: redis
+    image: docker.io/valkey/valkey:8-alpine
+    command: valkey-server --save 30 1 --loglevel warning
+    restart: unless-stopped
+    networks:
+      - sun_net
+
+  searxng:
+    container_name: searxng
+    image: docker.io/searxng/searxng:latest
+    restart: unless-stopped
+    networks:
+      - sun_net
+    ports:
+      - "8083:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080/
+      - SEARXNG_SECRET=sunsecretkey12345
+    depends_on:
+      - tor
+      - redis
+
+  sun_app:
+    container_name: sun_app
+    build: ./sun_app
+    restart: unless-stopped
+    networks:
+      - sun_net
+    ports:
+      - "5000:5000"
+    depends_on:
+      - searxng
+    environment:
+      - SUN_USER=lover
+      - SUN_PASS=secretpassword
+
+networks:
+  sun_net:
