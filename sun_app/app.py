@@ -1,3 +1,4 @@
+import urllib.parse
 import re
 import concurrent.futures
 from functools import lru_cache
@@ -27,7 +28,7 @@ def requires_auth(f):
     return decorated
 
 def init_db():
-    conn = sqlite3.connect('sun_rl.db')
+    conn = sqlite3.connect('/app/data/sun_rl.db')
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS preferences (word TEXT PRIMARY KEY, weight REAL)')
     conn.commit()
@@ -36,7 +37,7 @@ def init_db():
 init_db()
 
 def get_weights():
-    conn = sqlite3.connect('sun_rl.db')
+    conn = sqlite3.connect('/app/data/sun_rl.db')
     c = conn.cursor()
     c.execute('SELECT word, weight FROM preferences')
     weights = {row[0]: row[1] for row in c.fetchall()}
@@ -45,7 +46,7 @@ def get_weights():
 
 def update_weights(title):
     words = title.lower().split()
-    conn = sqlite3.connect('sun_rl.db')
+    conn = sqlite3.connect('/app/data/sun_rl.db')
     c = conn.cursor()
     for w in words:
         if len(w) > 3:
@@ -56,6 +57,7 @@ def update_weights(title):
 @app.route('/')
 @requires_auth
 def index():
+
     return render_template('index.html')
 
 @app.route('/search')
@@ -63,6 +65,12 @@ def index():
 def search():
     q = request.args.get('q', '')
     if not q: return redirect('/')
+
+    # Log query history
+    conn = sqlite3.connect('/app/data/sun_rl.db')
+    conn.execute('INSERT INTO history (query) VALUES (?)', (q,))
+    conn.commit()
+    conn.close()
     
     # Fetch from SearXNG internal container
     r = requests.get('http://searxng:8080/search', params={'q': q, 'format': 'json'})
@@ -97,9 +105,30 @@ def search():
             }
             results.insert(0, usito_result)
     
+
+
+    # --- Bandcamp Music Override ---
+    music_keywords = {'bandcamp', 'music', 'band', 'artist', 'album', 'song', 'ep', 'vinyl', 'musique', 'groupe', 'chanson', 'artiste'}
+    query_words = set(q_lower.split())
+    
+    is_music_intent = bool(music_keywords.intersection(query_words))
+    
+    if not is_music_intent:
+        music_domains = ['bandcamp.com', 'open.spotify.com', 'music.apple.com', 'last.fm', 'soundcloud.com', 'genius.com']
+        top_urls = [res.get('url', '').lower() for res in results[:4]]
+        is_music_intent = any(any(domain in url for domain in music_domains) for url in top_urls)
+
+    if is_music_intent:
+        bc_query = q.strip()
+        bc_result = {
+            'title': f'🎸 Bandcamp : Écouter et soutenir "{bc_query}"',
+            'url': f'https://bandcamp.com/search?q={urllib.parse.quote(bc_query)}',
+            'content': f'Contournez le streaming corporatif. Soutenez directement les créateurs en explorant leur musique sur Bandcamp.',
+            'rl_score': float('inf')
+        }
+        results.insert(0, bc_result)
+
     return render_template('index.html', results=results, query=q)
-
-
 
 
 @lru_cache(maxsize=500)
@@ -119,7 +148,7 @@ def fetch_external_autocomplete(q):
 
 def fetch_local_autocomplete(q):
     try:
-        conn = sqlite3.connect('sun_rl.db')
+        conn = sqlite3.connect('/app/data/sun_rl.db')
         c = conn.cursor()
         c.execute('SELECT word FROM preferences WHERE word LIKE ? ORDER BY weight DESC LIMIT 4', (q + '%',))
         rl_results = [row[0] for row in c.fetchall()]

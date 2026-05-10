@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <g stroke="#ffab00" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Outer U shape of the tulip -->
+    <path d="M 25 30 L 25 60 C 25 80, 35 90, 50 90 C 65 90, 75 80, 75 60 L 75 30" />
+    
+    <!-- Inner left petal -->
+    <path d="M 25 30 C 40 38, 48 55, 50 90" />
+    
+    <!-- Inner right petal -->
+    <path d="M 75 30 C 60 38, 52 55, 50 90" />
+    
+    <!-- Center bud (the 'Sun' core) -->
+    <path d="M 38 38 L 50 20 L 62 38" />
+  </g>
+</svg>

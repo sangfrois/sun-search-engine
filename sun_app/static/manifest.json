@@ -1,0 +1,9 @@
+{
+  "name": "SUN Search",
+  "short_name": "SUN",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#ffab00",
+  "icons": [{ "src": "/static/sun-tulip-final.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

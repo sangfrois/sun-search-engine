@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Sun Background -->
+  <circle cx="50" cy="50" r="46" fill="#ffab00" />
+  
+  <!-- Minimalist Tulip Outline -->
+  <g stroke="#121212" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 41 38 L 50 25 L 59 38 L 50 48 Z" />
+    <path d="M 26 38 C 26 75, 36 84, 50 84 C 64 84, 74 75, 74 38" />
+    <path d="M 26 38 C 40 45, 46 65, 50 84" />
+    <path d="M 74 38 C 60 45, 54 65, 50 84" />
+  </g>
+</svg>

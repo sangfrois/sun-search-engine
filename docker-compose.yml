@@ -44,9 +44,23 @@ services:
       - "5000:5000"
     depends_on:
       - searxng
+    volumes:
+      - ./sun_data:/app/data
     environment:
       - SUN_USER=lover
       - SUN_PASS=secretpassword
+
+  sun_dashboard:
+    container_name: sun_dashboard
+    build: ./sun_app
+    command: python dashboard.py
+    restart: unless-stopped
+    networks:
+      - sun_net
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./sun_data:/app/data
 
 networks:
   sun_net:
